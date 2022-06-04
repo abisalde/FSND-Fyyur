@@ -1,0 +1,11 @@
+{
+  "name": "FSND-Fyyur",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:abisalde/FSND-Fyyur.git",
+  "author": "abisalde <isaiah.abiodun@outlook.com>",
+  "license": "MIT",
+  "dependencies": {
+    "bootstrap": "3"
+  }
+}
