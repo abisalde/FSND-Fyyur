@@ -12,6 +12,7 @@ from flask_sqlalchemy import SQLAlchemy
 import logging
 from logging import Formatter, FileHandler
 from flask_migrate import Migrate
+from sqlalchemy import func
 from forms import *
 
 #----------------------------------------------------------------------------#
@@ -123,16 +124,26 @@ def index():
 def venues():
     # TODO: replace with real venues data.
     #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
+    all_venue_areas = Venue.query.with_entities(func.count(
+        Venue.id), Venue.city, Venue.state).group_by(Venue.city, Venue.state).all()
     data = []
-    venues = Venue.query.all()
-    for venue in venues:
-        upcoming_shows = Show.query.filter(Show.venue_id == venue.id).filter(
-            Show.start_time > datetime.now()).count()
+
+    for area in all_venue_areas:
+        venues_in_area = Venue.query.filter_by(
+            city=area.city, state=area.state).all()
+        venue_data = []
+        for venue in venues_in_area:
+            venue_data.append({
+                "id": venue.id,
+                "name": venue.name,
+                "num_upcoming_shows": len(venue.shows)
+            })
         data.append({
-            "id": venue.id,
-            "name": venue.name,
-            "num_upcoming_shows": upcoming_shows
+            "city": area.city,
+            "state": area.state,
+            "venues": venue_data
         })
+
     return render_template('pages/venues.html', areas=data)
 
 
@@ -220,9 +231,8 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
     error = False
+
     try:
         name = request.form['name']
         city = request.form['city']
@@ -230,14 +240,14 @@ def create_venue_submission():
         address = request.form['address']
         phone = request.form['phone']
         genres = request.form.getlist('genres')
-        facebook_link = request.form['facebook_link']
         image_link = request.form['image_link']
-        website = request.form['website']
-        seeking_talent = True if request.form['seeking_talent'] == 'y' else False
+        facebook_link = request.form['facebook_link']
+        website_link = request.form['website_link']
+        seeking_talent = True if 'seeking_talent' in request.form else False
         seeking_description = request.form['seeking_description']
-        venue = Venue(
-            name=name, city=city, state=state, address=address,
-            phone=phone, genres=genres, facebook_link=facebook_link, image_link=image_link, website=website, seeking_talent=seeking_talent, seeking_description=seeking_description)
+
+        venue = Venue(name=name, city=city, state=state, address=address, phone=phone, genres=genres, facebook_link=facebook_link,
+                      image_link=image_link, website_link=website_link, seeking_talent=seeking_talent, seeking_description=seeking_description)
         db.session.add(venue)
         db.session.commit()
     except:
@@ -249,7 +259,7 @@ def create_venue_submission():
     if error:
         flash('An error occurred. Venue ' +
               request.form['name'] + ' could not be listed.')
-    else:
+    if not error:
         flash('Venue ' + request.form['name'] + ' was successfully listed!')
     return render_template('pages/home.html')
 
