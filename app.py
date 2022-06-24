@@ -178,10 +178,8 @@ def show_venue(venue_id):
     past_shows = Show.query.filter(Show.venue_id == venue.id).filter(
         Show.start_time < datetime.now()).all()
     past_shows = []
-
-    if not venue:
-        return render_template('errors/404.html')
-
+    
+    
     for show in upcoming_shows:
         upcoming_shows.append({
             "artist_id": show.artist_id,
